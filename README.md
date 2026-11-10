@@ -1,145 +1,64 @@
-# NSFW Novel Writer (Local) - 使用指南 v2.1
+# 技能备忘：NSFW Novel Writer (Local) 双格式版
 
-NSFW Novel Writer (Local) 是一个专为成人向小说创作设计的 WorkBuddy AI Agent 技能。**v2.1 核心变更：彻底移除 YAML 配置，直接对接 WorkBuddy 本地模型服务（OpenAI 兼容 API），加载技能即可使用。**
+本目录保存同一份技能的**两份副本**，内容完全一致，仅以目录名区分，互不覆盖：
 
-## 📦 目录结构
+| 目录 | 面向 | 说明 |
+|------|------|------|
+| `nsfw-novel-writer-local.workbuddy/` | WorkBuddy | 用户级技能副本 |
+| `nsfw-novel-writer-local.bionic/` | Bionic (LM Studio) | 按 Agent Skills 开放规范整理，可直接导入 |
 
-```
-nsfw-novel-writer-local/
-├── SKILL.md              # 技能说明文档（已集成到 WorkBuddy）
-├── README.md             # 本使用指南 v2.1（零配置版）
-├── icon.png              # 技能图标
-├── scripts/              # 本地模型调用与可选自托管脚本
-│   ├── generate.sh          # ★ 核心：调用 WorkBuddy 本地模型 API
-│   ├── run_server.sh        # （可选）自建本地推理服务
-│   ├── deploy_models.sh     # （可选）从 HF 镜像下载模型权重
-│   ├── convert_models.sh    # （可选）转换为 GGUF 格式
-│   └── convert_to_llamacpp.sh
-└── references/           # 写作辅助参考（角色卡/强度档位/提示词库等）
-```
+> 原始技能（v2.1.0 零配置版）仍在 `~/.workbuddy/skills/nsfw-novel-writer-local/` 与 GitHub 仓库 `main` 分支，本目录**不修改、不覆盖**它。
 
-## 🚀 快速开始（三步，零配置）
+## SKILL.md 格式说明（Bionic 兼容）
 
-### 第一步：在 WorkBuddy 加载本地模型
-
-通过你习惯的方式把无审查模型跑起来，并确认它对外提供 **OpenAI 兼容的 Chat Completions API**（WorkBuddy 本地模型服务、Ollama、llama.cpp、vLLM 等均可）。
-
-### 第二步：（可选）指定端点
-
-如果本地模型 API 不是默认地址，在 shell 中导出环境变量即可，**无需任何配置文件**：
-
-```bash
-export LOCAL_MODEL_ENDPOINT="http://localhost:8080/v1/chat/completions"
-```
-
-不设置则使用默认值 `http://localhost:11434/v1/chat/completions`。
-
-### 第三步：加载技能并开始创作
-
-在 WorkBuddy 的「专家中心」搜索并加载 **NSFW Novel Writer (Local)**，然后直接描述需求：
+Bionic 使用 Anthropic 开放的 [Agent Skills 规范](https://agentskills.io)，`SKILL.md` 由两部分组成：
 
 ```
-"帮我写一段两个角色在雨夜的咖啡馆相遇的场景，要有暧昧的张力。"
-```
-
-```
-[模式：第一人称] [风格：细腻含蓄]
-"我想写一段关于初恋重逢的故事，女主是林悦，男主是她高中时的同桌。"
-```
-
-## 🔌 本地模型如何被调用
-
-技能通过 `scripts/generate.sh` 调用 WorkBuddy 本地模型服务：
-
-- 读取环境变量 `LOCAL_MODEL_ENDPOINT`（默认 `http://localhost:11434/v1/chat/completions`）
-- 兼容标准 OpenAI Chat Completions 请求体
-- 你在 WorkBuddy 里选用哪个本地模型，技能就用哪个 —— **切换模型无需改任何代码**
-
-生成流程：拼装提示词 → 调用本地模型 API 取回正文 → 应用 SANCTIS-Δ 架构层优化 → 执行敏感词规避检查 → 返回成品。
-
-你也可以手动测试模型端点：
-
-```bash
-echo "写一段雨夜相遇的开场白" | bash scripts/generate.sh
-```
-
-## 🛠️ 可选：自建本地推理服务
-
-如果你不想用 WorkBuddy 内置的本地模型服务，也可以用附带的脚本自己跑一个 OpenAI 兼容服务（这些脚本**不是使用本技能的必需步骤**）：
-
-```bash
-# 启动 llama.cpp / vLLM / Transformers 服务（具体见脚本内说明）
-bash scripts/run_server.sh llama.cpp  path/to/model.gguf
-bash scripts/run_server.sh vllm       MODEL_NAME
-bash scripts/run_server.sh transformers
-```
-
-需要下载模型权重时（约 3GB 起），可用：
-
-```bash
-bash scripts/deploy_models.sh            # 走 hf-mirror 加速下载
-```
-
-## 🎯 使用 WorkBuddy 技能
-
-1. 打开 WorkBuddy 左侧「专家中心」
-2. 搜索 **NSFW Novel Writer (Local)** 并加载
-3. 直接对话创作，随时切换模式/风格/NSFW 档位
-
-### 模式与风格
-
-```
-[模式：第一人称] [风格：细腻含蓄] "..."
-[模式：多视角]   [风格：直白热烈] "..."
-[NSFW 档位：3] "把刚才那段改成更直接的描写。"
-```
-
-## 📊 NSFW 档位说明
-
-| 档位 | 描述 | 适用场景 |
-|------|------|----------|
-| 0 | 完全 SFW，仅暗示 | 前期铺垫、日常对话 |
-| 1 | 轻微亲密接触 | 牵手、拥抱、亲吻脸颊 |
-| 2 | 明确的情感与肢体吸引 | 深吻、爱抚、裸露关键部位暗示 |
-| 3 | 直接的 NSFW 描写 | 完整的亲密场景，详细的感官描述 |
-| 4 | 极限强度 NSFW | 高度露骨的描写，适合成熟读者 |
-
-## 🛡️ 敏感词规避机制
-
-- **同义替换**：自动将高频敏感词映射到平台友好表达
-- **句式重构**：调整直接描述为隐喻或侧面描写
-- **强度分级**：根据 NSFW 档位（0-4）动态调整露骨程度
-- **上下文感知**：区分医学、文学等合法使用场景
-
-## 🐛 常见问题排查
-
-### Q：调用本地模型失败 / 超时
-
-**A:**
-1. 确认本地模型服务已启动，且暴露的是 `/v1/chat/completions` 接口
-2. 确认 `LOCAL_MODEL_ENDPOINT` 指向正确地址（默认 `http://localhost:11434/v1/chat/completions`）
-3. 用 `curl` 手动探测：`curl -s $LOCAL_MODEL_ENDPOINT -H 'Content-Type: application/json' -d '{"model":"x","messages":[{"role":"user","content":"hi"}]}'`
-
-### Q：输出质量不佳
-
-**A:**
-1. 在提示词中适当提高 temperature（0.7–0.9）
-2. 选用质量更高的本地模型
-3. 明确指定 NSFW 档位与风格
-
-### Q：敏感词仍被平台过滤
-
-**A:**
-1. 降低 NSFW 档位（0–2）
-2. 使用更含蓄的「细腻含蓄」风格
-3. 不同平台敏感词库有差异，建议本地测试
-
-## 📄 License
-
-MIT License — See SKILL.md for details.
-
+---
+name: nsfw-novel-writer-local     # 必填，小写字母/数字/连字符
+description: "..."               # 必填，描述做什么 + 何时使用
 ---
 
-**Author**: WorkBuddy NSFW Novel Writer Team
-**Version**: 2.1.0
-**Last Updated**: November 2026
+# 标题与 Markdown 正文（技能指令）
+```
+
+- **只有 `name` 和 `description` 必填**；其它字段会被 Bionic 忽略。
+- `name` 仅允许小写字母、数字、连字符，最长 64 字符。
+- `description` 最长 1024 字符；frontmatter 中不要出现尖括号 `<` `>`。
+- 目录结构：技能文件夹根目录放 `SKILL.md`，可选 `scripts/`、`references/`、`assets/`。
+
+本技能的 frontmatter 同时保留了 `display_name` / `description_zh` / `description_en` / `category` / `version` / `author` / `agent_created` 等字段，供 WorkBuddy 索引使用；Bionic 会忽略这些未知字段，因此**同一份文件可同时兼容两端**。
+
+## 导入 Bionic 的方式
+
+1. **直接拖入**：LM Studio Bionic → `Settings > Skills`，把 `nsfw-novel-writer-local.bionic/SKILL.md` 拖进去。
+2. **从 URL 安装**：在 Bionic 中让它安装以下地址（或把该 URL 交给 `@Install Skill`）：
+   ```
+   https://raw.githubusercontent.com/pan7230/nsfw-novel-writer/skills/dual-format/nsfw-novel-writer-local.bionic/SKILL.md
+   ```
+3. **复用其它 Agent 的技能目录**：`Settings > Skills > Skills from other apps` 中启用对应目录。
+
+导入后用 `@` 语法在 composer 中调用。注意：按规范 Bionic 主要读取 `SKILL.md` 本身，`scripts/` 与 `references/` 属可选辅助文件，如需使用请保留在本地工作区。
+
+## 技能能力（v2.1.0 零配置版）
+
+- 双模式：第一人称沉浸式描写 / 多视角切换与剧情推进
+- 双风格：细腻含蓄 / 直白热烈
+- 自动润色与平台敏感词规避
+- 直连 WorkBuddy 本地模型（OpenAI 兼容 `/v1/chat/completions`），端点由 `LOCAL_MODEL_ENDPOINT` 指定，默认 `http://localhost:11434/v1/chat/completions`；**无需任何 YAML 配置**
+- 不含任何模型权重，模型由用户自行下载加载
+
+## 目录内文件（每个版本 14 个）
+
+```
+SKILL.md              # 技能入口（合规 frontmatter + 正文）
+README.md             # 使用指南
+icon.png              # 图标
+.gitignore            # 排除模型权重
+scripts/              # 5 个脚本：generate / deploy_models / convert_models / convert_to_llamacpp / run_server
+references/           # 5 份写作指南：角色卡 / 强度档位 / 提示词库 / 导出格式 / 写作辅助
+```
+
+## 合规声明
+
+本技能严格限定于成年人、虚构、双方自愿的情节创作；拒绝未成年人、非自愿、剥削及任何违法内容。请遵守所在平台与地区的法律法规。
