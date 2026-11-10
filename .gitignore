@@ -1,0 +1,17 @@
+# ============ 模型权重（体积过大，不纳入版本控制） ============
+# 通过 scripts/deploy_models.sh 使用 hf-mirror 自动下载到本地
+UnfilteredAI/
+OPT-125M/
+*.gguf
+*.safetensors
+*.bin
+*.msgpack
+*.h5
+
+# ============ 系统 / 工具残留 ============
+.DS_Store
+scripts/.workbuddy
+
+# ============ Python ============
+__pycache__/
+*.pyc
