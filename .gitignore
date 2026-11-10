@@ -15,3 +15,6 @@ scripts/.workbuddy
 # ============ Python ============
 __pycache__/
 *.pyc
+
+# ============ 本地模型服务器（运行态） ============
+server.pid

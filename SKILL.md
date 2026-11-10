@@ -1,17 +1,20 @@
 ---
-name: nsfw-novel-writer
-display_name: NSFW Novel Writer
-display_name_en: NSFW Novel Writer
-description: 成人向（18+）虚构小说创作引擎。支持第一人称沉浸式描写与多视角剧情推进，提供细腻含蓄与直白热烈双风格及敏感词规避。严格限定成年人、虚构、自愿情节。
+name: nsfw-novel-writer-local
+display_name: NSFW Novel Writer (Local)
+display_name_en: NSFW Novel Writer (Local)
+description_zh: 本地模型版成人向（18+）虚构小说创作引擎。支持第一人称沉浸式描写与多视角剧情推进，提供细腻含蓄与直白热烈双风格及敏感词规避。直接对接 WorkBuddy 本地模型服务（OpenAI 兼容 API），无需配置 YAML，加载即用。
+description_en: Local-model NSFW Novel Writer engine for 18+ fictional writing. Supports first-person immersion and multi-perspective progression, with dual style preferences (subtle/atmospheric vs direct/sensual) and auto-sensitive-word avoidance. Talks to WorkBuddy's local model service (OpenAI-compatible API) directly — no YAML config, load-and-use.
 category: 写作创作
-version: 1.0.0
+version: 2.1.0
 author: pan7230
 agent_created: true
 ---
 
-# NSFW Novel Writer
+# NSFW Novel Writer (Local)
 
-NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能，支持第一人称沉浸式描写和多视角切换的剧情推进。该技能整合了 Velvet Ascent、SANCTIS-Δ 等多个优秀 NSFW 写作框架的核心特性，提供结构化的创作流程和智能的敏感词规避机制。
+NSFW Novel Writer (Local) 是一个专为成人向小说创作设计的 AI Agent 技能，支持第一人称沉浸式描写和多视角切换的剧情推进。该技能整合了 Velvet Ascent、SANCTIS-Δ 等多个优秀 NSFW 写作框架的核心特性，提供结构化的创作流程和智能的敏感词规避机制。
+
+**核心差异（v2.1）**：彻底移除 `model_config.yaml` 配置文件。模型直接复用你在 WorkBuddy 中已加载的**本地模型服务**（OpenAI 兼容 `/v1/chat/completions` API）。你只需在 WorkBuddy 里把无审查模型加载好、暴露出本地 API 端点，加载本技能后即可直接开始创作，无需任何额外配置。
 
 ## ✨ 核心特性
 
@@ -27,34 +30,39 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
   - 自动识别并替换平台敏感词汇
   - 保持成人向张力的同时确保内容安全
 
-- **多模型支持**
-  - UnfilteredAI/NSFW-3B（约 3GB）：高质量 NSFW 内容生成
-  - OPT-125M：轻量级快速推理
-  - 自定义模型：支持本地部署的任意无审查模型
+- **直连 WorkBuddy 本地模型（零配置）**
+  - 复用 WorkBuddy 已加载的本地模型服务（OpenAI 兼容 API）
+  - 端点通过环境变量 `LOCAL_MODEL_ENDPOINT` 指定，默认为 `http://localhost:11434/v1/chat/completions`
+  - 不绑定任何具体权重文件，不写死模型路径
 
 - **结构化创作流程**
   - 角色卡与世界观设定
   - 剧情大纲与章节蓝图
   - 草稿生成、审稿修稿闭环
 
-## 📋 使用方式
+## 🚀 使用方式（零配置）
 
-### 基础对话模式
+### 前置条件（一次性）
 
-直接描述你的创作需求，技能会自动识别并进入相应模式：
+1. **准备本地模型**：通过你习惯的方式（WorkBuddy 本地模型加载、Ollama、llama.cpp、vLLM 等）把无审查模型跑起来，并确认它对外提供 **OpenAI 兼容的 Chat Completions API**。
+2. **（可选）设置端点**：如果端点不是默认地址，在 shell 中导出环境变量即可，无需任何配置文件：
+   ```bash
+   export LOCAL_MODEL_ENDPOINT="http://localhost:8080/v1/chat/completions"
+   ```
+   不设置则使用默认值 `http://localhost:11434/v1/chat/completions`。
+
+### 开始创作
+
+直接在 WorkBuddy 中加载本技能，然后像下面这样描述需求即可：
 
 ```
 "帮我写一段两个角色在雨夜的咖啡馆相遇的场景，要有暧昧的张力。"
 ```
 
-### 第一人称沉浸式模式
-
 ```
 [模式：第一人称] [风格：细腻含蓄]
 "我想写一段关于初恋重逢的故事，女主是林悦，男主是她高中时的同桌。"
 ```
-
-### 多视角切换模式
 
 ```
 [模式：多视角] [风格：直白热烈]
@@ -68,6 +76,18 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
 ```
 [切换到直白热烈风格] "现在把刚才那段改成更直接的描写。"
 ```
+
+## 🔌 本地模型集成
+
+技能通过 `scripts/generate.sh` 调用 WorkBuddy 本地模型服务，无需任何 YAML 配置：
+
+- 读取环境变量 `LOCAL_MODEL_ENDPOINT`（默认 `http://localhost:11434/v1/chat/completions`）
+- 兼容标准 OpenAI Chat Completions 请求体（`model` / `messages` / `temperature` / `max_tokens` 等）
+- 你在 WorkBuddy 里选用哪个本地模型，技能就用哪个 —— 切换模型无需改代码
+
+技能生成流程：根据模板拼装提示词 → 调用本地模型 API 取回正文 → 应用 SANCTIS-Δ 架构层优化 → 执行敏感词规避检查 → 返回成品。
+
+> 如果你希望自己独立跑推理服务（不走 WorkBuddy 本地模型），`scripts/` 下仍保留了 `run_server.sh` / `convert_models.sh` 等可选脚本，但**已不再是使用本技能的必需步骤**。
 
 ## 🎯 核心机制
 
@@ -108,7 +128,7 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
 
 ## 📁 工作区结构
 
-技能维护以下文件以追踪创作状态：
+技能维护以下文件以追踪创作状态（位于当前工作区）：
 
 ```
 /workspace/
@@ -121,9 +141,8 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
 │   └── chapter_02.md
 ├── review/                # 审稿记录
 │   └── review_chapter_01.md
-├── revised/               # 修稿文件
-│   └── revised_chapter_01.md
-└── model_config.yaml      # 当前使用的模型配置
+└── revised/               # 修稿文件
+    └── revised_chapter_01.md
 ```
 
 ## 🔄 创作流程示例
@@ -177,7 +196,7 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
 用户确认蓝图后，技能开始逐章生成草稿。每章生成时会：
 1. 读取相关角色档案和世界观设定
 2. 根据当前章节目标生成提示词
-3. 调用配置的模型进行推理
+3. 调用 WorkBuddy 本地模型 API 进行推理（见「本地模型集成」）
 4. 应用 SANCTIS-Δ 架构层优化输出
 5. 执行敏感词规避检查
 
@@ -190,46 +209,6 @@ NSFW Novel Writer 是一个专为成人向小说创作设计的 AI Agent 技能�
 - 改进建议
 
 用户可基于审稿报告要求修改，技能会生成修订版本。
-
-## ⚙️ 模型配置（model_config.yaml）
-
-```yaml
-# 当前使用的模型
-current_model: "UnfilteredAI/NSFW-3B"
-
-# 可选模型列表
-available_models:
-  - name: "UnfilteredAI/NSFW-3B"
-    size_gb: 3
-    recommended_ram_gb: 8
-    description: "高质量 NSFW 小说生成，适合深度创作"
-  
-  - name: "OPT-125M"
-    size_mb: 125
-    recommended_ram_gb: 2
-    description: "轻量级快速推理，适合快速构思"
-
-  - name: "custom_model_path"
-    size_gb: null
-    recommended_ram_gb: null
-    description: "用户自定义的本地模型路径"
-
-# 推理参数
-generation_params:
-  max_new_tokens: 512
-  temperature: 0.85
-  top_p: 0.9
-  repetition_penalty: 1.1
-
-# NSFW 档位控制 (0-4)
-nsfw_level: 3
-
-# 当前模式
-current_mode: "multi_perspective"  # 或 "first_person"
-
-# 当前风格
-current_style: "subtle"  # 或 "direct"
-```
 
 ## 📊 NSFW 档位说明
 
@@ -347,32 +326,26 @@ NSFW 强度档位：{{nsfw_level}}
 
 ## 📝 注意事项
 
-1. **模型选择建议**：
-   - 追求质量优先 → UnfilteredAI/NSFW-3B
-   - 硬件资源有限（<4GB RAM）→ OPT-125M
-   - 已有本地模型 → 自定义路径
-
-2. **第一人称模式限制**：
+1. **模型来源**：本技能不携带任何模型权重。请使用你自己合法获取并已加载到 WorkBuddy 本地模型服务的无审查模型。
+2. **端点设置**：若本地模型 API 非默认地址，导出 `LOCAL_MODEL_ENDPOINT` 环境变量即可，无需改任何配置文件。
+3. **第一人称模式限制**：
    - 不适合快速推进剧情
    - 容易陷入过度心理描写
    - 建议用于关键情感场景
-
-3. **多视角模式优势**：
+4. **多视角模式优势**：
    - 适合长篇连载的节奏控制
    - 可自然展现人物关系网
    - 注意切换时的情感连贯性
-
-4. **敏感词规避**：
+5. **敏感词规避**：
    - 并非万能，极端场景仍需人工审核
    - 不同平台敏感词库有差异，建议测试
-
-5. **创作主权**：
+6. **创作主权**：
    - 技能是辅助工具，最终决定权在用户
    - 可随时调整模式、风格、档位
    - 保留随时中断或重置的能力
 
 ---
 
-**License**: MIT  
-**Author**: WorkBuddy NSFW Novel Writer Team  
-**Version**: 1.0.0
+**License**: MIT
+**Author**: WorkBuddy NSFW Novel Writer Team
+**Version**: 2.1.0
